@@ -53,6 +53,23 @@ class ManagementAcceptance(unittest.TestCase):
         with self.assertRaises(ControlError):self.panel.route(self.user(True),'/api/panel/instance/files',{'server':'hub'})
         with self.assertRaises(ControlError):self.panel.prepare(self.user(True),'instance.file.mkdir',{'server':'hub','path':'bad'})
         self.assertFalse((self.instance/'bad').exists())
+    def test_staff_terminal_is_narrow_and_commands_remain_authorized(self):
+        user=self.user(True)
+        logs=self.panel.route(user,'/api/panel/instance/logs',{'server':'hub'})
+        self.assertIn('服务器启动',logs['text'])
+        for action in ['files','file','config','backups','tasks','trash','overview']:
+            with self.subTest(action=action),self.assertRaises(ControlError) as error:self.panel.route(user,'/api/panel/instance/'+action,{'server':'hub','path':'notes.txt'})
+            self.assertEqual(error.exception.status,403)
+        help=self.panel.route(user,'/api/panel/console-help',{})['commands']
+        self.assertIn('save',[row['en'] for row in help]);self.assertNotIn('console.raw',[row['permission'] for row in help])
+        for command in ['op Player','stop','execute run say x','forge tps','deltaloot clear','minecraft:op Player']:
+            with self.subTest(command=command),self.assertRaises(ControlError) as error:self.panel.prepare(user,'console',{'server':'hub','command':command,'reason':'permission regression'})
+            self.assertEqual(error.exception.status,403)
+        before=list(self.servers.commands)
+        op=self.panel.prepare(user,'console',{'server':'hub','command':'announce permission-test','reason':'permission regression'})
+        self.assertEqual(before,self.servers.commands)
+        self.panel.confirm(user,op['operationId']);self.assertEqual(len(self.servers.commands)-len(before),2)
+        with self.assertRaises(ControlError):self.panel.prepare(user,'server.lifecycle',{'server':'hub','action':'stop','reason':'denied'})
     def test_path_escape_links_and_sensitive_files(self):
         for path in ['../outside','/etc/passwd','C:/Windows','logs/../../x','.env','server.properties','store.sqlite']:
             with self.subTest(path=path),self.assertRaises(ControlError):self.panel.management.read_file('hub',path)

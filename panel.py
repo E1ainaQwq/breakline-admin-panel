@@ -29,7 +29,7 @@ import mimetypes
 ROLES = {
     'admin': {'servers.read', 'players.read', 'players.assets', 'catalog.read',
               'grant.money', 'grant.items', 'grant.entitlements', 'console.announce', 'console.save',
-              'console.map', 'console.warn', 'console.ban', 'console.voice', 'audit.read', 'evidence.read', 'players.check', 'players.orders'},
+              'console.map', 'console.warn', 'console.ban', 'console.voice', 'console.logs', 'audit.read', 'evidence.read', 'players.check', 'players.orders'},
     'owner': {'*'},
 }
 LABELS = {'admin': '管理员', 'owner': '服主'}
@@ -433,12 +433,13 @@ class Panel:
             self.audit(user['id'],'READ_BODY_INVENTORY',{'accountId':target['accountId'],'server':server},'SUCCESS')
             return result
         if path.startswith('/api/panel/instance/'):
-            self.require(user,'instance.read')
             action=path.rsplit('/',1)[1];server=data.get('server')
+            if action=='logs':
+                self.require(user,'console.logs');return self.management.logs(server,data.get('cursor',''))
+            self.require(user,'instance.read')
             if action=='overview':return self.management.overview()
             if action=='files':return self.management.list_files(server,data.get('path',''))
             if action=='file':return self.management.read_file(server,data.get('path',''),data.get('download')=='1')
-            if action=='logs':return self.management.logs(server,data.get('cursor',''))
             if action=='config':return self.management.properties(server)
             if action=='backups':return self.management.backups(server)
             if action=='tasks':return self.management.tasks(server)
