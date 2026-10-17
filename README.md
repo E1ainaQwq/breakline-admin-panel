@@ -65,3 +65,5 @@ sudo systemctl enable --now breakline-panel-file-owner.socket
 参考上游 [MCSManager](https://github.com/MCSManager/MCSManager)，基线 `aab9f7fd1ff2eb9a38d9107a6c676709320bce9b`。复用并修改的卡片、配色、尺寸和背景素材保留 Apache-2.0 声明，见 `ui/public/MCSManager-LICENSE.txt`、`ui/public/NOTICE.txt` 以及源文件标注。构建会输出运行时第三方许可证汇总。
 
 本项目并非 MCSManager 官方产品。公开仓库不含生产配置、密钥、数据库、玩家数据、截图证据或游戏物品图标；第三方代码各自遵循其许可证。未另行授予本项目原创代码的许可证。
+
+控制台指令输入支持中文/英文搜索、候选列表、参数提示、在线玩家名、目录中的已知子命令、Tab/Enter 选择和历史记录。选中候选不会直接执行；写入仍需预览确认。
