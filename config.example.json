@@ -1,0 +1,54 @@
+{
+  "bind": "127.0.0.1",
+  "port": 17850,
+  "origin": "https://panel.example.invalid",
+  "database": "/var/lib/breakline-admin/admin.db",
+  "dataCenter": "http://127.0.0.1:17840",
+  "servers": [
+    {
+      "id": "hub",
+      "name": "主城",
+      "host": "127.0.0.1",
+      "port": 25576,
+      "passwordEnv": "PANEL_RCON_HUB",
+      "unit": "breakline-hub",
+      "directory": ""
+    },
+    {
+      "id": "dam",
+      "name": "大坝",
+      "host": "127.0.0.1",
+      "port": 25577,
+      "passwordEnv": "PANEL_RCON_DAM",
+      "unit": "breakline-dam",
+      "directory": ""
+    },
+    {
+      "id": "space",
+      "name": "航天城",
+      "host": "127.0.0.1",
+      "port": 25575,
+      "passwordEnv": "PANEL_RCON_SPACE",
+      "unit": "breakline-space",
+      "directory": ""
+    },
+    {
+      "id": "babel",
+      "name": "巴别塔",
+      "host": "127.0.0.1",
+      "port": 25578,
+      "passwordEnv": "PANEL_RCON_BABEL",
+      "unit": "breakline-babel",
+      "directory": ""
+    }
+  ],
+  "evidence": {
+    "database": "/opt/breakline/evidence/screenshots.db",
+    "sshHost": "evidence-read@evidence.example.invalid",
+    "sshKey": "/etc/breakline-admin/evidence_read_ed25519"
+  },
+  "workspaceDefault": true,
+  "management": {
+    "storage": "/var/lib/breakline-admin/instance-data"
+  }
+}

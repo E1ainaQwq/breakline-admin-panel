@@ -1,0 +1,11 @@
+Breakline administration workspace
+
+Includes components and theme assets derived from MCSManager/MCSManager.
+Upstream: https://github.com/MCSManager/MCSManager
+Source revision: aab9f7fd1ff2eb9a38d9107a6c676709320bce9b
+License: Apache License 2.0 (see MCSManager-LICENSE.txt).
+
+Unmodified upstream theme assets: base.scss, variables.scss, variables-dark.scss, side.png.
+CardPanel.vue is adapted; design-mode coupling was removed. The application shell
+and backend adapters were implemented for Breakline. MCSManager trademarks and
+branding are not presented as Breakline ownership or official endorsement.

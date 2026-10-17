@@ -1,0 +1,342 @@
+[
+  {
+    "zh": "在线人数",
+    "en": "list",
+    "permission": "servers.read",
+    "template": "list",
+    "description": "查看在线人数与角色名",
+    "parameters": [],
+    "readonly": true
+  },
+  {
+    "zh": "屏幕公告",
+    "en": "announce",
+    "permission": "console.announce",
+    "template": "announce {内容}",
+    "description": "在屏幕中央广播",
+    "parameters": [
+      {
+        "name": "内容",
+        "type": "text"
+      }
+    ],
+    "readonly": false
+  },
+  {
+    "zh": "保存世界",
+    "en": "save",
+    "permission": "console.save",
+    "template": "save",
+    "description": "立即保存世界",
+    "parameters": [],
+    "readonly": false
+  },
+  {
+    "zh": "地图检查",
+    "en": "map-inspect",
+    "permission": "console.map",
+    "template": "map-inspect",
+    "description": "检查滑索与出生点配置",
+    "parameters": [],
+    "readonly": false
+  },
+  {
+    "zh": "警告玩家",
+    "en": "warn",
+    "permission": "console.warn",
+    "template": "warn {角色名} {原因}",
+    "description": "屏幕及聊天警告",
+    "parameters": [
+      {
+        "name": "角色名",
+        "type": "player"
+      },
+      {
+        "name": "原因",
+        "type": "text"
+      }
+    ],
+    "readonly": false
+  },
+  {
+    "zh": "封禁玩家",
+    "en": "ban",
+    "permission": "console.ban",
+    "template": "ban {角色名} {原因}",
+    "description": "本服务器封禁",
+    "parameters": [
+      {
+        "name": "角色名",
+        "type": "player"
+      },
+      {
+        "name": "原因",
+        "type": "text"
+      }
+    ],
+    "readonly": false
+  },
+  {
+    "zh": "解封玩家",
+    "en": "pardon",
+    "permission": "console.ban",
+    "template": "pardon {角色名} {原因}",
+    "description": "撤销本服务器封禁",
+    "parameters": [
+      {
+        "name": "角色名",
+        "type": "player"
+      },
+      {
+        "name": "原因",
+        "type": "text"
+      }
+    ],
+    "readonly": false
+  },
+  {
+    "zh": "原版完整帮助",
+    "en": "help",
+    "permission": "console.raw",
+    "template": "help {页码}",
+    "description": "分页读取服务器注册的实际全指令；适用于所有加载的模组",
+    "parameters": [
+      {
+        "name": "页码",
+        "type": "number",
+        "default": "1"
+      }
+    ],
+    "readonly": false
+  },
+  {
+    "zh": "踢出玩家",
+    "en": "kick",
+    "permission": "console.raw",
+    "template": "kick {角色名} {原因}",
+    "description": "断开玩家连接",
+    "parameters": [
+      {
+        "name": "角色名",
+        "type": "player"
+      },
+      {
+        "name": "原因",
+        "type": "text"
+      }
+    ],
+    "readonly": false
+  },
+  {
+    "zh": "查询 TPS",
+    "en": "forge tps",
+    "permission": "console.raw",
+    "template": "forge tps",
+    "description": "Forge 世界 tick 耗时",
+    "parameters": [],
+    "readonly": false
+  },
+  {
+    "zh": "白名单列表",
+    "en": "whitelist list",
+    "permission": "console.raw",
+    "template": "whitelist list",
+    "description": "查看准入名单",
+    "parameters": [],
+    "readonly": false
+  },
+  {
+    "zh": "封禁列表",
+    "en": "banlist",
+    "permission": "console.raw",
+    "template": "banlist",
+    "description": "查看当前封禁",
+    "parameters": [],
+    "readonly": false
+  },
+  {
+    "zh": "反作弊状态",
+    "en": "deltaac status",
+    "permission": "console.raw",
+    "template": "deltaac status",
+    "description": "检查判据运行状态",
+    "parameters": [],
+    "readonly": false
+  },
+  {
+    "zh": "deltaballistics 管理",
+    "en": "deltaballistics",
+    "permission": "console.raw",
+    "template": "deltaballistics {参数}",
+    "description": "源码注册指令，子项：reload / status。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "BallisticsCommands.java"
+  },
+  {
+    "zh": "deltaduel 管理",
+    "en": "deltaduel",
+    "permission": "console.raw",
+    "template": "deltaduel {参数}",
+    "description": "源码注册指令，子项：buildarenas。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "DuelArena.java"
+  },
+  {
+    "zh": "deltainspect 管理",
+    "en": "deltainspect",
+    "permission": "console.raw",
+    "template": "deltainspect {参数}",
+    "description": "源码注册指令，子项：无。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "InspectionDiagnostics.java"
+  },
+  {
+    "zh": "deltavalue 管理",
+    "en": "deltavalue",
+    "permission": "console.raw",
+    "template": "deltavalue {参数}",
+    "description": "源码注册指令，子项：reload。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "ItemValues.java"
+  },
+  {
+    "zh": "delta 管理",
+    "en": "delta",
+    "permission": "console.raw",
+    "template": "delta {参数}",
+    "description": "源码注册指令，子项：无。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "KeyRoomServer.java"
+  },
+  {
+    "zh": "deltaloot 管理",
+    "en": "deltaloot",
+    "permission": "console.raw",
+    "template": "deltaloot {参数}",
+    "description": "源码注册指令，子项：reload / scan / refresh / ready / status / loose / types / here / quality / category / rarity / item / chance / clear / type / add / remove / list。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "LootRefreshServer.java"
+  },
+  {
+    "zh": "deltamatch 管理",
+    "en": "deltamatch",
+    "permission": "console.raw",
+    "template": "deltamatch {参数}",
+    "description": "源码注册指令，子项：reconnect / force-close / force-start / resolve-settlements / mail-escrow。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "MatchControlCommands.java"
+  },
+  {
+    "zh": "force 管理",
+    "en": "force",
+    "permission": "console.raw",
+    "template": "force {参数}",
+    "description": "源码注册指令，子项：close。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "MatchControlCommands.java"
+  },
+  {
+    "zh": "deltascav 管理",
+    "en": "deltascav",
+    "permission": "console.raw",
+    "template": "deltascav {参数}",
+    "description": "源码注册指令，子项：test / spawn / point / add / list / remove / clear。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "ScavPrototypeServer.java"
+  },
+  {
+    "zh": "deltaspawn 管理",
+    "en": "deltaspawn",
+    "permission": "console.raw",
+    "template": "deltaspawn {参数}",
+    "description": "源码注册指令，子项：add / set / remove / clear / info。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "SpawnZoneCommands.java"
+  },
+  {
+    "zh": "deltazipline 管理",
+    "en": "deltazipline",
+    "permission": "console.raw",
+    "template": "deltazipline {参数}",
+    "description": "源码注册指令，子项：reload / list / remove / add。位置类操作须在游戏内执行。",
+    "parameters": [
+      {
+        "name": "参数",
+        "type": "text",
+        "optional": true
+      }
+    ],
+    "readonly": false,
+    "source": "ZiplineServer.java"
+  }
+]

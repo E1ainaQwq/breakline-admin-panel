@@ -1,0 +1,22 @@
+# Private runtime configuration and data
+config.json
+.env
+.env.*
+*.db
+*.db-*
+*.sqlite*
+*.pem
+*.key
+*.log
+*.zip
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+web/mcsm/
+web/icons/
+instance-data/
+evidence/
+uploads/
+backups/
+config.*.local.json

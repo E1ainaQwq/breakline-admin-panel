@@ -1,0 +1,12 @@
+[Unit]
+Description=Breakline bounded file ownership socket
+[Socket]
+ListenStream=/run/breakline-panel-file-owner.sock
+SocketUser=breakline-admin
+SocketGroup=breakline-admin
+SocketMode=0600
+Accept=yes
+RemoveOnStop=yes
+MaxConnections=16
+[Install]
+WantedBy=sockets.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=Breakline bounded file ownership request
+[Service]
+Type=exec
+User=root
+ExecStart=/usr/bin/python3 -I /usr/local/libexec/breakline-panel-file-owner --socket
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+CapabilityBoundingSet=CAP_CHOWN CAP_FOWNER CAP_DAC_OVERRIDE
+ReadWritePaths=/opt/breakline-hub-1.20.1 /opt/breakline-dam-1.20.1 /opt/breakline-space-1.20.1 /opt/breakline-babel-1.20.1
+RuntimeMaxSec=30
+TimeoutStopSec=3
