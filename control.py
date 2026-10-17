@@ -1,5 +1,6 @@
 """Fixed server adapters. Secrets and transport paths are never supplied by the browser."""
 import json
+import base64
 import os
 import re
 import socket
@@ -84,6 +85,9 @@ class DataCenter:
     def grant(self, payload):
         return self.call('/v1/admin/inventory/grant', payload)
 
+    def delete_inventory(self,payload):
+        return self.call('/v1/admin/panel/inventory-delete',payload)
+
 
 def _read_exact(sock, count):
     result = bytearray()
@@ -153,6 +157,29 @@ def online_count(text):
 
 
 class Servers:
+    def inventory_reply(self,server,command):
+        raw=self.command(server,command);prefix='DELTA_INVENTORY_V1 '
+        if prefix not in raw:raise ControlError('INVENTORY_NOT_READY','此游戏服务器尚未接入身上物品管理，请部署配套游戏端后再查询',503)
+        try:value=json.loads(raw.split(prefix,1)[1].strip())
+        except ValueError:raise ControlError('INVENTORY_UNCERTAIN','物品响应不完整，请刷新后重试',503) from None
+        if value.get('ok') is not True:raise ControlError('INVENTORY_REJECTED',value.get('message','游戏端拒绝物品操作'),409)
+        return value
+
+    def body_inventory(self,server,player):
+        player=str(uuid.UUID(player));first=self.inventory_reply(server,'deltainventoryadmin read '+player+' 0')
+        total=first.get('total');revision=first.get('revision');items=list(first.get('items',[]))
+        if type(total) is not int or not 0<=total<=2200 or first.get('playerUuid')!=player:raise ControlError('INVENTORY_UNCERTAIN','物品身份或数量无法确认',503)
+        for page in range(1,(total+31)//32):
+            row=self.inventory_reply(server,'deltainventoryadmin read '+player+' '+str(page))
+            if row.get('revision')!=revision or row.get('playerUuid')!=player:raise ControlError('INVENTORY_CHANGED','查询期间物品已变化，请重新查询',409)
+            items+=row.get('items',[])
+        if len(items)!=total:raise ControlError('INVENTORY_UNCERTAIN','物品响应不完整',503)
+        return {'server':server,'playerUuid':player,'revision':revision,'items':items,'online':True}
+
+    def delete_body_inventory(self,server,player,operation,items,reason):
+        value={'items':items,'reason':reason};encoded=base64.urlsafe_b64encode(json.dumps(value,ensure_ascii=False,separators=(',',':')).encode()).decode()
+        return self.inventory_reply(server,'deltainventoryadmin remove '+str(uuid.UUID(player))+' '+str(uuid.UUID(operation))+' '+encoded)
+
     def order_job(self, server, command, job):
         prefix='DELTA_ORDER_V1 '
         output=self.command(server, command)

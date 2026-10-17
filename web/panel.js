@@ -132,21 +132,50 @@ async function selectPlayer(player){
   target.append(head,node('p','uuid',detail.accountId));
   const management=node('div','moderation-actions');for(const [kind,label] of [['ban','封禁'],['warn','警告'],['voice','语音禁言']])management.append(action(label,()=>page('moderation').then(()=>{setModeration(kind);$('#moderation-form [name=player]').value=detail.displayName;})));if(has('players.check')&&has('evidence.read'))management.append(action('检查该玩家',()=>openPlayerCheck(detail)));target.append(management);
   const stats=node('div','metrics');for(const [label,value] of [['哈弗币',detail.balance],['主仓库参考价值',detail.warehouse.referenceValue],['待交付',detail.pendingDeliveries]]){const part=node('div');part.append(node('span','',label),node('strong','',format(value)));stats.append(part);}target.append(stats);
-  const tabs=node('div','storage-tabs');const view=node('div','warehouse-wrap');target.append(tabs,view);
-  const draw=(storage)=>{
-    const columns=Math.max(1,storage.columns),rows=Math.ceil(storage.capacity/columns),grid=node('div','warehouse-grid');
-    grid.style.setProperty('--columns',columns);grid.style.gridTemplateColumns='repeat('+columns+',minmax(0,1fr))';grid.style.gridTemplateRows='repeat('+rows+',minmax(0,1fr))';grid.style.aspectRatio=columns+' / '+rows;grid.style.minWidth=(columns*52)+'px';grid.style.backgroundSize=(100/columns)+'% '+(100/rows)+'%';
-    for(let index=storage.capacity;index<columns*rows;index++){const blocked=node('div','warehouse-unavailable');blocked.style.gridColumn=(index%columns+1);blocked.style.gridRow=(Math.floor(index/columns)+1);blocked.title='未解锁格子';grid.append(blocked);}
-    for(const item of storage.items){
-      if(item.x<0||item.y<0)continue;
-      const cell=node('div','warehouse-item');cell.dataset.rarity=item.rarity;
-      cell.style.gridColumn=(item.x+1)+' / span '+item.width;cell.style.gridRow=(item.y+1)+' / span '+item.height;
-      cell.title=item.name+' × '+item.count+'\n'+item.sku+'\nUID: '+item.uid;cell.append(productIcon(item),node('span','',item.name),node('b','',item.count));grid.append(cell);
+  const sourceBar=node('div','storage-tabs'),tabs=node('div','storage-tabs'),tools=node('div','inventory-tools'),view=node('div','warehouse-wrap');target.append(sourceBar,tabs,tools,view);
+  let source='warehouse',storage=detail.warehouse,deleteMode=false,bodyItems=[],bodyLoading=false,bodyGeneration=0;const selected=new Map();
+  const server=node('select');server.setAttribute('aria-label','查询物品的服务器');for(const row of state.servers){const option=node('option','',row.name);option.value=row.id;server.append(option);}server.value=state.servers.find(s=>s.players&&s.players.split(':').slice(1).join(':').split(',').map(n=>n.trim()).includes(detail.displayName))?.id||'hub';
+  const warehouseButton=action('仓库物品',()=>{bodyGeneration++;bodyLoading=false;source='warehouse';selected.clear();deleteMode=false;render();});
+  const bodyButton=action('身上物品',async()=>{source='body';selected.clear();deleteMode=false;await loadBody();});sourceBar.append(warehouseButton,bodyButton);
+  async function loadBody(){
+    const generation=++bodyGeneration;bodyLoading=true;bodyItems=[];selected.clear();render();
+    try{const result=await api('player-inventory?accountId='+encodeURIComponent(detail.accountId)+'&server='+encodeURIComponent(server.value));if(generation!==bodyGeneration||state.selectedPlayer?.accountId!==detail.accountId)return;bodyItems=result.items;}
+    catch(e){if(generation!==bodyGeneration)return;view.replaceChildren(node('p','error',e.message),action('重新查询',loadBody));bodyLoading=false;renderTools();return;}
+    bodyLoading=false;render();
+  }
+  server.addEventListener('change',safe(loadBody));
+  function toggle(item,cell){if(!deleteMode||item.deletable===false)return;if(!item.hash){error('该服务尚未提供物品校验信息，不能删除；请更新配套后端');return;}if(selected.has(item.uid))selected.delete(item.uid);else{if(selected.size>=32){error('一次最多选择32组物品');return;}selected.set(item.uid,item);}cell.classList.toggle('selected',selected.has(item.uid));cell.setAttribute('aria-pressed',String(selected.has(item.uid)));renderTools();}
+  function cellFor(item,grid){
+    const cell=node('button','warehouse-item');cell.type='button';cell.dataset.rarity=item.rarity||'WHITE';cell.disabled=!deleteMode||item.deletable===false;cell.classList.toggle('selected',selected.has(item.uid));cell.setAttribute('aria-pressed',String(selected.has(item.uid)));cell.setAttribute('aria-label',(deleteMode?'选择删除 ':'')+item.name+' × '+item.count+(item.location?' · '+item.location:''));
+    cell.title=item.name+' × '+item.count+'\n'+(item.sku||item.itemId)+'\nUID: '+item.uid;cell.append(productIcon(item),node('span','',item.name),node('b','',item.count));cell.addEventListener('click',()=>toggle(item,cell));
+    if(grid){cell.style.gridColumn=(item.x+1)+' / span '+item.width;cell.style.gridRow=(item.y+1)+' / span '+item.height;}return cell;
+  }
+  function renderTools(){
+    tools.replaceChildren();if(source==='body'){tools.append(server,action('刷新身上物品',loadBody));}
+    if(has('players.inventory-delete')){
+      const mode=action(deleteMode?'退出删除模式':'删除模式',()=>{deleteMode=!deleteMode;selected.clear();render();});mode.classList.toggle('danger',deleteMode);tools.append(mode);
+      if(deleteMode){const remove=action('删除选中（'+selected.size+'）',()=>deleteSelected());remove.disabled=!selected.size||bodyLoading;remove.classList.add('danger');tools.append(remove,node('span','muted','点击物品勾选；删除整组，先预览再确认，不退款。'));}
     }
-    view.replaceChildren(grid);
-  };
-  tabs.append(action('主仓库',()=>draw(detail.warehouse)));for(const box of detail.boxes)tabs.append(action(box.shell.name,()=>draw(box)));draw(detail.warehouse);
-  target.append(node('p','muted','格子按服务器实际坐标与尺寸显示。参考价值按目录基础价格计算。'));
+  }
+  async function deleteSelected(){
+    const chosen=[...selected.values()],dialog=node('dialog');dialog.id='inventory-delete-dialog';dialog.append(node('h2','','删除选中的'+(source==='body'?'身上':'仓库')+'物品'),node('p','muted','以下整组物品将被删除，不会退款。物品变化后会拒绝执行。'));
+    const list=node('ul');for(const item of chosen)list.append(node('li','',item.name+' × '+item.count+(item.location?' · '+item.location:'')));dialog.append(list);
+    const label=node('label','','删除原因'),reason=node('input');reason.required=true;reason.maxLength=200;reason.setAttribute('aria-label','删除原因');label.append(reason);dialog.append(label);const problem=node('p','error');problem.setAttribute('role','alert');dialog.append(problem);
+    const next=action('预览删除',async()=>{if(!reason.value.trim()){problem.textContent='请填写删除原因';return;}try{await prepare({kind:'players.inventory-delete',accountId:detail.accountId,source,server:server.value,items:chosen.map(i=>({uid:i.uid,hash:i.hash})),reason:reason.value.trim()});dialog.close();dialog.remove();}catch(e){problem.textContent=e.message;throw e;}});dialog.append(action('取消',()=>{dialog.close();dialog.remove();}),next);dialog.addEventListener('cancel',()=>dialog.remove());document.body.append(dialog);dialog.showModal();reason.focus();
+  }
+  function render(){
+    warehouseButton.setAttribute('aria-pressed',String(source==='warehouse'));bodyButton.setAttribute('aria-pressed',String(source==='body'));tabs.replaceChildren();renderTools();
+    view.classList.toggle('delete-mode',deleteMode);
+    if(source==='body'){
+      if(bodyLoading){view.replaceChildren(node('p','muted','正在查询游戏服务端的真实物品…'));return;}
+      const list=node('div','body-inventory');for(const item of bodyItems){const row=node('div','body-inventory-row');row.append(node('small','',item.location),cellFor(item,false));list.append(row);}view.replaceChildren(node('p','muted','仅查询所选服务器的在线角色：口袋、快捷栏、穿戴装备及已装备容器内容。离线不会显示为空背包。'),list);if(!bodyItems.length)view.append(node('p','muted','当前在线角色没有物品'));return;
+    }
+    const choose=s=>{storage=s;selected.clear();render();};tabs.append(action('主仓库',()=>choose(detail.warehouse)));for(const box of detail.boxes)tabs.append(action(box.shell.name,()=>choose(box)));
+    const columns=Math.max(1,storage.columns),rows=Math.ceil(storage.capacity/columns),grid=node('div','warehouse-grid');grid.style.setProperty('--columns',columns);grid.style.gridTemplateColumns='repeat('+columns+',minmax(0,1fr))';grid.style.gridTemplateRows='repeat('+rows+',minmax(0,1fr))';grid.style.aspectRatio=columns+' / '+rows;grid.style.minWidth=(columns*52)+'px';grid.style.backgroundSize=(100/columns)+'% '+(100/rows)+'%';
+    for(let i=storage.capacity;i<columns*rows;i++){const blocked=node('div','warehouse-unavailable');blocked.style.gridColumn=i%columns+1;blocked.style.gridRow=Math.floor(i/columns)+1;grid.append(blocked);}
+    const unplaced=[];for(const item of storage.items){if(item.x<0||item.y<0)unplaced.push(item);else grid.append(cellFor(item,true));}view.replaceChildren(grid);if(unplaced.length){view.append(node('h3','','未摆放物品'));const list=node('div','body-inventory');for(const item of unplaced)list.append(cellFor(item,false));view.append(list);}
+  }
+  render();target.append(node('p','muted','查询模式可切换仓库和身上物品；删除模式仅服主可用，确认时再次校验物品。'));
   target.append(node('h2','','待交付记录'));if(!detail.deliveries.length)target.append(node('p','muted','没有待交付物品'));for(const delivery of detail.deliveries)target.append(dataRow(delivery.item?.name||delivery.deliveryId,delivery.status,delivery.deliveryId));
   target.append(node('h2','history-title','最近邮件'));for(const mail of detail.mails)target.append(dataRow(mail.subject,format(mail.currency)+' 哈弗币 · '+mail.attachmentCount+' 件附件',mail.status+' · '+date(mail.createdAt)));
 }
@@ -210,7 +239,7 @@ async function execute(id){
   const result=await api('confirm',{operationId:id});
   if(result.output!==undefined){$('#console-output').textContent+='\n\n['+new Date().toLocaleTimeString('zh-CN')+']\n'+result.output;}
   status(result.message||'操作已完成');
-  if(state.page==='grants')await loadOperations();if(state.page==='servers')await loadServers();return result;
+  if(state.page==='grants')await loadOperations();if(state.page==='servers')await loadServers();if(state.page==='players'&&state.selectedPlayer)await selectPlayer(state.selectedPlayer);return result;
 }
 let commands=[];
 async function loadHelp(){commands=(await api('console-help')).commands;renderHelp();}

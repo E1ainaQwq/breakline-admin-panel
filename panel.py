@@ -208,7 +208,31 @@ class Panel:
 
     def prepare(self, user, kind, data):
         payload = {}
-        if kind == 'players.orders':
+        if kind == 'players.inventory-delete':
+            self.require(user,kind)
+            target=self.dc.player(str(uuid.UUID(text(data.get('accountId'),64))))
+            source=data.get('source')
+            if source not in ('warehouse','body'):reject('INVALID_SOURCE','请选择仓库或身上物品')
+            rows=data.get('items')
+            if not isinstance(rows,list) or not 1<=len(rows)<=32:reject('INVALID_ITEMS','一次选择1～32组物品')
+            reason=text(data.get('reason'));server=None
+            if source=='body':
+                if not target.get('playerUuid'):reject('PLAYER_NOT_BOUND','该账号没有唯一的游戏角色绑定',409)
+                server=self.servers.entry(text(data.get('server'),32))['id']
+                available=self.servers.body_inventory(server,target['playerUuid'])['items']
+            else:available=target['warehouse']['items']+[item for box in target['boxes'] for item in box['items']]
+            byid={row['uid']:row for row in available};selected=[];seen=set();names=[]
+            for row in rows:
+                if not isinstance(row,dict):reject('INVALID_ITEMS','物品选择无效')
+                uid=row.get('uid')
+                if not isinstance(uid,str) or len(uid)>128:reject('INVALID_ITEMS','物品标识无效')
+                item=byid.get(uid)
+                if not item or uid in seen or not isinstance(row.get('hash'),str) or len(row['hash'])!=64 or item.get('hash')!=row['hash']:reject('ITEM_CHANGED','物品已改变，请刷新后重新选择',409)
+                if item.get('deletable') is False:reject('ITEM_PROTECTED','安全箱、钥匙包或非空容器本体不能直接删除',409)
+                seen.add(uid);selected.append({'uid':uid,'hash':row['hash']});names.append(item['name']+' × '+str(item['count']))
+            payload={'accountId':target['accountId'],'source':source,'server':server,'items':selected,'reason':reason,'playerUuid':target.get('playerUuid'),'actor':user['id']}
+            summary='删除 '+target['displayName']+' 的'+('身上' if source=='body' else '仓库')+'物品：'+'、'.join(names)+'。删除整组，不退款；原因：'+reason
+        elif kind == 'players.orders':
             self.require(user,kind)
             target=self.dc.player(str(uuid.UUID(text(data.get('accountId'),64))))
             server=self.servers.entry(text(data.get('server'),32))['id']
@@ -363,6 +387,13 @@ class Panel:
                 receipt = {'mailId': mail['mailId'], 'message': '邮件已发出，玩家可在邮箱领取', 'operationId': operation_id}
             elif op['kind'] == 'players.orders':
                 receipt=self.servers.clear_order(payload['server'],payload['accountId'],payload['orderId'],operation_id)
+            elif op['kind'] == 'players.inventory-delete':
+                if payload['source']=='body':
+                    target=self.dc.player(payload['accountId'])
+                    if target.get('playerUuid')!=payload['playerUuid']:reject('PLAYER_BINDING_CHANGED','玩家绑定已改变，未执行删除',409)
+                    receipt=self.servers.delete_body_inventory(payload['server'],payload['playerUuid'],operation_id,payload['items'],payload['reason'])
+                else:receipt=self.dc.delete_inventory({'requestId':operation_id,'accountId':payload['accountId'],'items':payload['items'],'reason':payload['reason'],'actor':payload['actor']})
+                if sorted(item.get('uid','') for item in receipt.get('removed',[]))!=sorted(item['uid'] for item in payload['items']):reject('RESULT_UNCERTAIN','删除回执不匹配，请核对原操作号',503)
             elif op['kind'] == 'console.voice':
                 def save_voice(value):
                     with self.db() as conn:
@@ -393,6 +424,14 @@ class Panel:
         return receipt
 
     def route(self, user, path, data):
+        if path=='/api/panel/player-inventory':
+            self.require(user,'players.assets')
+            target=self.dc.player(str(uuid.UUID(text(data.get('accountId'),64))))
+            if not target.get('playerUuid'):reject('PLAYER_NOT_BOUND','该账号没有唯一的游戏角色绑定',409)
+            server=self.servers.entry(text(data.get('server'),32))['id']
+            result=self.servers.body_inventory(server,target['playerUuid'])
+            self.audit(user['id'],'READ_BODY_INVENTORY',{'accountId':target['accountId'],'server':server},'SUCCESS')
+            return result
         if path.startswith('/api/panel/instance/'):
             self.require(user,'instance.read')
             action=path.rsplit('/',1)[1];server=data.get('server')
